@@ -4,7 +4,7 @@
 	"description": "This is a boilerplate of an Apify actor.",
 	"dependencies": {
 		"apify": "^2.0.0",
-		"puppeteer": "*"
+		"puppeteer": "^10.4.0"
 	},
 	"devDependencies": {
 		"@apify/eslint-config": "^0.1.3",

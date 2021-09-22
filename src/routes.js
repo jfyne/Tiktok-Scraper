@@ -3,9 +3,11 @@ const Apify = require('apify');
 const { utils: { log } } = Apify;
 
 exports.handleList = async ({ request, page }, requestQueue, maxResultsPerPage) => {
-    // 6 is the initial number of loaded videos, actually after a while there are 36 videos loaded and
-    // this continues with the scroll event - not implemented yet
-    await page.waitForFunction('document.querySelectorAll("main .video-feed-item").length > 6');
+    // Wait for the network to settle, initially there will be 36 videos loaded. There
+    // are more with a scroll event - not implemented yet.
+    await page.waitForNetworkIdle({
+        idleTime: 2000
+    });
     // video-feed list
     let videoUrls = await page.evaluate(() => {
         const result = [];
