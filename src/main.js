@@ -47,6 +47,7 @@ Apify.main(async () => {
         handlePageFunction: async (context) => {
             const { url, userData: { label } } = context.request;
             log.info(`${context.response.status()}|${label}|${url}`);
+
             const title = await context.page.$eval('title', (titl) => titl.innerText.trim());
             if (title.includes('Something went wrong')
                 || title.includes('Robot Check')
@@ -54,6 +55,11 @@ Apify.main(async () => {
                 // retire the session
                 context.session.retire();
                 throw new Error(`${url} was blocked and needs to retry.`);
+            }
+            // If the page is not found do nothing.
+            if (context.response.status() === 404) {
+                log.info(`Stopping with not found --- ${context.response.status()} - ${url}`);
+                return;
             }
             switch (label) {
                 case 'USER':
@@ -65,7 +71,7 @@ Apify.main(async () => {
             }
         },
         handleFailedRequestFunction: async (context) => {
-            log.error(`Request failed too many times --- ${context.url}`);
+            log.error(`Request failed too many times --- ${context.request.url}`);
         },
     });
 
