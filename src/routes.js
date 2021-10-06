@@ -10,10 +10,10 @@ exports.handleList = async ({ request, page }, requestQueue, maxResultsPerPage) 
     });
 
     // video-feed list
-    let videoUrls = await page.$$eval('main .video-feed-item', (els) => els.reduce((total, video) => {
-           total.push(video.querySelector('a')?.getAttribute('href'));
+    let videoUrls = await page.$$eval('.video-feed-item a', (els) => els.reduce((total, a) => {
+           total.push(a.href);
            return total;
-    }, []).filter((videoUrl) => videoUrl));
+    }, []));
 
     log.info(`[SEARCH VIDEOS]: Found ${videoUrls.length} videos.`)
     if (maxResultsPerPage !== undefined && maxResultsPerPage !== 0) {
@@ -35,7 +35,7 @@ exports.handleList = async ({ request, page }, requestQueue, maxResultsPerPage) 
         });
         for (const videoUrl of videoUrls) {
             const matchUrl = videoUrl.match(/.*\/video/);
-            const matchVideoId = videoUrl.match(/[0-9]+/);
+            const matchVideoId = extractVideoID(videoUrl);
             if (matchUrl) {
                 const userUrl = matchUrl[0];
                 if (matchVideoId) {
@@ -47,7 +47,7 @@ exports.handleList = async ({ request, page }, requestQueue, maxResultsPerPage) 
                             header,
                             videoUrl,
                         },
-                        uniqueKey:matchVideoId[0],
+                        uniqueKey:matchVideoId,
                     });
                 } else {
                     throw new Error ('The video has no id defined.');
@@ -120,28 +120,24 @@ exports.handleVideo = async ({ request, page }) => {
         ...request.userData.userInfo,
         ...output,
         videoUrlOnTiktok: request.url,
-        videoId: request.url.match(/[0-9]+/)[0],
+        videoId: extractVideoID(request.url),
     });
 };
 
+const extractVideoID = (url) => {
+    const match = url.match(/\/video\/(?<id>[0-9]+)/);
+    return match?.groups?.id;
+}
+
 const getUserInfo = async (page, url) => {
     return page.evaluate((url) => {
-        const shareLinks = [];
-        if (document.querySelector('.share-links')) {
-            [...document.querySelector('.share-links')
-                .querySelectorAll('a')]
-                .map((link) => {
-                    shareLinks.push(link.innerText);
-                });
-        }
-
         return {
             userUrl: url,
             following: document.querySelector('.count-infos [title="Following"]').innerText,
             followers: document.querySelector('.count-infos [title="Followers"]').innerText,
             userTotalLikes: document.querySelector('.count-infos [title="Likes"]').innerText,
             userDescription: document.querySelector('.share-desc').innerText,
-            userShareLinks: shareLinks,
+            userShareLinks: [...document.querySelectorAll('.share-links a')].map(a=>a.innerText),
         };
     }, url);
 };
